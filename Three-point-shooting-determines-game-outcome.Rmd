@@ -6,5 +6,87 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo  =  TRUE, warning = FALSE, message = FALSE)
 ```
+
+```{r load-packages, message = FALSE}
+library(tidyverse)
+library(broom)
+library(knitr)
+library(readxl)
+```
+
+```{r load-data, message = FALSE}
+marchmadness2021 <- read_excel("Data/March_Madness_2021_AllGames_Data.xlsx")
+```
+### Data Exploration and Practice
+
+#### More3s
+Frequency of winning team out shooting losing team on 3 point shots (variable more3s equals 0 if losing team made more three point shots, 0.5 if equal amount were made, and 1 if the winning team made more three point shots):
+
+```{r}
+marchmadness2021 <- marchmadness2021 %>% mutate(more3s = factor(if_else(W3P > L3P , 1, if_else(W3P == L3P, 0.5, 0))))
+
+marchmadness2021 %>% count(more3s)
+```
+
+In the 2021 tournament, the winning team made more three pointers in 63.6% (42/66) of games, the teams tied in 13.6% (9/66) of games, and the losing team made more three pointers in 22.7% (15/66) of games.
+
+#### Better3s
+
+Frequency of winning team out shooting losing team on 3 point shot percentage (variable better3s equals 0 if losing team made a higher percentage of three point shots, 0.5 if an equal percentage were made, and 1 if the winning team made a higher percentage):
+
+```{r}
+marchmadness2021 <- marchmadness2021 %>% mutate(better3s = factor(if_else( (W3P/W3PA) > (L3P/L3PA) , 1, if_else((W3P/W3PA) == (L3P/L3PA), 0.5, 0))))
+
+marchmadness2021 %>% count(better3s)
+```
+
+In the 2021 tournament, the winning team made a higher percentage of three pointers in 77.3% (51/66) of games, while the losing team made a higher percentage in only 22.7% (15/66) of games.
+
+#### More and Better 3s?
+
+```{r}
+marchmadness2021 %>% count(more3s, better3s, sort = TRUE)
+```
+
+In 2021, in only 13.6% (9/66) of games did the winning team make less 3s and a lower percentage of them.  In contrast, in 68.2% (45/66) of games did the winning team either make more 3s and shoot a higher percentage (38 games) or tie on the number of makes and shoot a higher percentage (7 games).
+
+#### More 2s
+
+Frequency of winning team out shooting losing team on 2 point shots (variable more2s equals 0 if losing team made more two point shots, 0.5 if equal amount were made, and 1 if the winning team made more two point shots):
+
+```{r}
+marchmadness2021 <- marchmadness2021 %>% mutate(more2s = factor(if_else(W2P > L2P , 1, if_else(W2P == L2P, 0.5, 0))))
+
+marchmadness2021 %>% count(more2s)
+```
+
+In only 42 games did the winning team make more 2 point baskets, and in 20 games the losing team made more (4 ties).
+
+#### Better 2s ??
+
+Frequency of winning team out shooting losing team on 2 point shot percentage (variable better2s equals 0 if losing team made a higher percentage of two point shots, 0.5 if equal amount were made, and 1 if the winning team a higher percentage of two point shots):
+
+```{r}
+marchmadness2021 <- marchmadness2021 %>% mutate(better2s = factor(if_else((W2P/W2PA) > (L2P/L2PA), 1, if_else((W2P/W2PA) == (L2P/L2PA), 0.5, 0))))
+
+marchmadness2021 %>% count(better2s)
+```
+
+WOW-- in only 44 games did the winning team out shoot the losing team on 2 point percentage, and in 21 games, the losing team out shot the winning team on 2 point percentage.
+
+#### Finally FGs? morefgs
+
+Frequency of winning team out shooting losing team in general (more shots made) (variable morefgs equals 0 if losing team made more shots, 0.5 if equal amount were made, and 1 if the winning team made more shots):
+
+```{r}
+marchmadness2021 <- marchmadness2021 %>% mutate(morefgs = factor(if_else(WFG > LFG , 1, if_else(WFG == LFG, 0.5, 0))))
+
+marchmadness2021 %>% count(morefgs)
+```
+
+In 84.8% of games the winning team made more field goals (makes sense, only other option to win then is by making more 3s as a portion of those field goals or more free throws or both).  There were 3 ties.
+
+#### FG percentage? betterfgs
+
