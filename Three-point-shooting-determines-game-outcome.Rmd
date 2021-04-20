@@ -1,5 +1,5 @@
 ---
-title: "Does three point shooting determine game outcomes with greater frequency than any other factor?"
+title: "Does three point shooting determine NCAA Tournament game outcomes more than any other factor?"
 author: "Jon Michael Stroh"
 date: "`r Sys.Date()`"
 output: pdf_document
@@ -158,6 +158,13 @@ ggplot(data = mm2021byteams, aes(y = `3P%`, color = Win)) +
        title = "Three Point Shooting Percentages by Outcome in MM 2021")
 ```
 
+```{r}
+with(mm2021byteams, aggregate(`3P%` ~ Win, FUN = median))
+```
+
+The median three point percentage for winning teams is 37.2% compared to only 28.6% for losing teams.
+
+Based on data exploration for all 66 games in the 2021 NCAA tournament, there seems to be a strong association between a team's three point shooting percentage for a single game and the probability that they win that game.  Thus, we intend to fit explore models with three point percentage as a predictor variable for whether a team wins a game or not.
 
 
 
