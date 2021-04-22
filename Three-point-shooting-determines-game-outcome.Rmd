@@ -2,27 +2,36 @@
 title: "Does three point shooting determine NCAA Tournament game outcomes more than any other factor?"
 author: "Jon Michael Stroh"
 date: "`r Sys.Date()`"
-output: pdf_document
+output: 
+ pdf_document: 
+    fig_height: 3
+    fig_width: 5
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo  =  TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE,
+                      fig.align = "center")
 ```
 
-```{r load-packages, message = FALSE, include = FALSE}
+```{r}
 library(tidyverse)
 library(broom)
 library(knitr)
 library(readxl)
+library(patchwork)
 ```
 
-```{r load-data, message = FALSE, include = FALSE}
+```{r}
 marchmadness2021 <- read_excel("Data/March_Madness_2021_AllGames_Data.xlsx")
 mm2021byteams <- 
 read_excel("Data/March_Madness_2021_GamesByTeam_Data.xlsx")
 mm2021byteams <- mm2021byteams %>% mutate(Win = factor(Win))
 ```
-## Data Exploration (For March Madness 2021)
+## Data Exploration (2021 NCAA Tournament)
+
+### New Variables
 
 #### More3s
 Frequency of the winning team out shooting the losing team on 3 point shots (variable more3s equals 0 if losing team made more three point shots, 0.5 if an equal amount were made, and 1 if the winning team made more three point shots):
@@ -50,7 +59,7 @@ marchmadness2021 %>% count(better3s)
 
 In the 2021 tournament, the winning team made a higher percentage of three pointers in 77.3% (51/66) of games, while the losing team made a higher percentage in only 22.7% (15/66) of games.
 
-#### More and Better 3s?
+#### More & Better 3s
 
 ```{r}
 marchmadness2021 %>% count(more3s, better3s, sort = TRUE)
@@ -70,7 +79,7 @@ marchmadness2021 %>% count(more2s)
 
 In only 42 games did the winning team make more 2 point baskets, and in 20 games the losing team made more (4 ties).
 
-#### Better 2s ??
+#### Better 2s
 Frequency of winning team out shooting losing team on 2 point shot percentage (variable better2s equals 0 if losing team made a higher percentage of two point shots, 0.5 if equal amount were made, and 1 if the winning team a higher percentage of two point shots):
 
 ```{r}
@@ -82,7 +91,7 @@ marchmadness2021 %>% count(better2s)
 
 WOW-- in only 44 games did the winning team out shoot the losing team on 2 point percentage, and in 21 games, the losing team out shot the winning team on 2 point percentage.
 
-#### Finally FGs? morefgs
+#### moreFgs
 Frequency of the winning team out shooting the losing team in general (more shots made) (variable morefgs equals 0 if losing team made more shots, 0.5 if equal amount were made, and 1 if the winning team made more shots):
 
 ```{r}
@@ -94,7 +103,7 @@ marchmadness2021 %>% count(morefgs)
 
 In 84.8% of games the winning team made more field goals (makes sense, only other option to win then is by making more 3s as a portion of those field goals or more free throws or both).  There were 3 ties.
 
-#### FG percentage? betterfgs
+#### betterfgs
 The frequency of the winning team out shooting the losing team by percentage (higher percentage of total shots made) (variable betterfgs equals 0 if losing team made more shots, 0.5 if equal amount were made, and 1 if the winning team made more shots):
 
 ```{r}
@@ -107,11 +116,11 @@ marchmadness2021 %>% count(betterfgs)
 
 However, interesting enough, in only 71.2% of games (47/66) did the winning team shoot a higher percentage on all field goals. With this being the case, clearly other factors can influence a win, the likely ones for investigation is free throw shooting (although there tends to be a small difference in this between teams in a single game), three point shooting (our variable of primary interests), and factors that can get a team more shots (offensive rebounding and forcing turnovers while limiting those things for themselves).
 
-## Data Exploration (For March Madness 2021, Additional Data)
 
-### Distribution of Shooting:
 
-## Two point shooting->
+### Distribution of Shooting
+
+#### Two point shooting
 twoPercent is the two point shooting percentage by team as a percentage, rather than a decimal, for graphing.
 
 ```{r}
@@ -123,8 +132,7 @@ ggplot(data = mm2021byteams, aes(x = twoPercent)) +
        title = "Two Point Shooting Percentages in MM 2021")
 ```
 
-## Three point shooting->
-
+#### Three point shooting
 threePercent is the three point shooting percentage by team as a percentage, rather than a decimal, for graphing.
 
 ```{r}
@@ -135,21 +143,22 @@ ggplot(data = mm2021byteams, aes(x = threePercent)) +
   labs(x = "Shooting Percentage", 
        title = "Three Point Shooting Percentages in MM 2021")
 ```
-## Comparing Shooting ->
+
+#### Comparing Shooting
 
 *Note: twoPercent_mean is not the shooting percent for all two point shots in the march madness tournament.  It is the mean shooting two point shooting percentage for each team each game.  Overall, it can not represent the percentage for total two point shooting percent because it is not adjusted for attempts by game.  The same thing goes for threePercent_mean*
 
 ```{r}
 mm2021byteams %>%
-  summarise(twoPercent_mean = mean(twoPercent),
-            threePercent_mean = mean(threePercent),
-            twoPercent_sd = sd(twoPercent),
-            threePercent_sd = sd(threePercent))
+  summarise(twoPercent_Mean = mean(twoPercent),
+            threePercent_Mean = mean(threePercent),
+            twoPercent_SD = sd(twoPercent),
+            threePercent_SD = sd(threePercent))
 ```
 
 Although three point shooting appears to much more closely resemble the normal distribution, it has a larger standard deviation indicating that there is more variation in three point shooting than two point shooting (although the standard deviations are very close) by game.  According to the standard deviations, 68% of the team's three point shooting by game occurs within 10.97% of 33.45%, while 68% of the team's two point shooting by game occurs within 10.14% of 48.97%.  There is slightly more variation is three point shooting performances by game than two point shooting performances.
 
-## Three Point Percentage by Outcome->
+#### Three Point Percentage by Outcome
 
 ```{r}
 ggplot(data = mm2021byteams, aes(y = `3P%`, color = Win)) + 
@@ -164,7 +173,73 @@ with(mm2021byteams, aggregate(`3P%` ~ Win, FUN = median))
 
 The median three point percentage for winning teams is 37.2% compared to only 28.6% for losing teams.
 
-Based on data exploration for all 66 games in the 2021 NCAA tournament, there seems to be a strong association between a team's three point shooting percentage for a single game and the probability that they win that game.  Thus, we intend to fit explore models with three point percentage as a predictor variable for whether a team wins a game or not.
+Based on data exploration for all 66 games in the 2021 NCAA tournament, there seems to be a strong association between a team's three point shooting percentage for a single game and the probability that they win that game.  Thus, we intend to explore models with three point percentage as a predictor variable for whether a team wins an NCAA tournament game or not.
+
+## Model Building
+
+According to a 2004 study, 4 factors were indicated to most affect the outcome of basketball games: "shooting efficiency, number of turnovers, offensive rebounds and free throws made" (Oliver).  Thus, I will fit a logistic regression model that includes two and three point percentage, total turnovers, total offensive rebounds, and total free throws attempted as predictor variables for whether or not a team wins a game.  Additionally, through my own observation of college basketball, assisted shots tend to be better shots, and thus more likely to go in. Therefore, I will add total assists to my model as a predictor.  Finally, teams that generate many steals tend to generate easy, fast break scoring opportunities.  Also, teams that limit fouls often limit the amount of times a team goes to the free throw line.  Thus, I will add total steals and total fouls to the model.  Finally, I want to mean center all the variables in the model so that the intercept can be interpreted.
+
+
+```{r}
+mm2021byteams <- mm2021byteams %>% 
+  mutate(twoPercentCent = twoPercent - mean(twoPercent), threePercentCent = threePercent - mean(threePercent), ORBCent = ORB - mean(ORB), ASTCent = AST - mean(AST), TOVCent = TOV - mean(TOV), STLCent = STL - mean(STL), PFCent = PF - mean(PF), FTACent = FTA - mean(FTA))
+```
+
+```{r}
+full_mm2021_model <- glm(Win ~ twoPercentCent + threePercentCent + ORBCent + ASTCent + TOVCent + STLCent + PFCent + FTACent, data = mm2021byteams, family = binomial)
+
+tidy(full_mm2021_model) %>% kable(digits = 3)
+```
+
+According to the model, the predictor variables with statistical significance for predicting whether a team won or loss is two point percentage, three point percentage, total turnovers, total steals, total fouls, and free throws attempted.
+
+According to the model, the odds of a team winning the game with the mean predictor values -- `r mean(mm2021byteams$twoPercent)`% two point shooting, `r mean(mm2021byteams$threePercent)`% three point shooting, `r mean(mm2021byteams$ORB)` offensive rebounds, `r mean(mm2021byteams$AST)` assists, `r mean(mm2021byteams$TOV)` turnovers, `r mean(mm2021byteams$STL)` steals, and `r mean(mm2021byteams$PF)` fouls -- is `r round(exp(0.014), 3)`.  This value makes sense because a team with the mean statistics in this value has an almost 1 to 1 odds of winning a game or roughly a 50% win percentage.
+
+According to the model, for every 1 percentage point increase in two point shooting percentage the odds the team wins the game is multiplied by a factor of `r round(exp(0.110), 3)`, holding all else constant.  Similarly, according to the model, for every 1 percentage point increase in three point shooting percentage the odds the team wins the game is multiplied by a factor of `r round(exp(0.100), 3)`, holding all else constant.  Thus, the coefficients for both two and three point shooting percentages are close, but the factor in which the odds of winning are multiplied by are slightly larger for two point shooting than three.
+
+Now, to fit a better model, I will conduct backwards model selection using AIC as well as a drop in deviance test to attempt to find the strongest model:
+
+#### Backwards Selection
+
+```{r}
+selected_mm2021_model_AIC <- step(full_mm2021_model, direction = "backward", trace = FALSE)
+tidy(selected_mm2021_model_AIC) %>% kable(digits = 3)
+```
+#### Drop-in-deviance test
+
+Hypotheses for Drop-in-deviance test:
+
+Null Hypothesis: $H_0: \beta_{ORBCent} = \beta_{ASTCent} = 0$
+(These variables don't add information to the model after accounting for two & three point shooting percentage, steals, turnovers, fouls, and free throws attempted)
+
+Alternative Hypothesis: $H_a: \text { at least one } \beta_j \text { is not equat to 0}$
+
+```{r}
+tidy(anova(selected_mm2021_model_AIC, full_mm2021_model, test = "Chisq"))
+```
+
+Because the p-value is much larger than 0.05, we fail to reject the null hypothesis.  That data does not provide sufficient evidence that the  coefficients for ORBCent and ASTCent are different from 0. The best model includes only two & three point shooting, turnovers, steals, fouls, and free throw attempts.
+
+#### Model Interpretation
+
+```{r}
+tidy(selected_mm2021_model_AIC) %>% kable(digits = 3)
+```
+
+Again, according to the model, the factor in which the odds of winning are multiplied by for each 1 percentage point increase in shooting percentages of twos and threes is still greater for an increase in two point percentage (`r round(exp(0.095), 3)` versus `r round(exp(0.090), 3)`).  Although, the coefficients are very close.
+
+To make predictions for team's game statics, we can refit the model without mean centering the variables.
+
+```{r}
+selected_mm2021_model_AIC_nocenter <- glm(Win ~ twoPercent + threePercent + TOV + STL + PF + FTA, data = mm2021byteams, family = binomial)
+tidy(selected_mm2021_model_AIC_nocenter) %>% kable(digits = 3)
+```
+
+For example, in the first round of the NCAA tournament, 1 seed Baylor beat 16 seed Hartford 79 to 55.  According to the model, the odds that Baylor would win the game given its game statistics are expected to be  `r round(exp(3.987), 3)` ($exp^{-3.263 + 0.095(47.6) + 0.090(33.3) - 0.214(10) + 0.277(15) - 0.229(16) + 0.138(10)}$).  This indicates that given its game statistics, Baylor is expected to win `r round(exp(3.987), 3)` games for every one loss.  This value may seem extreme but Baylor's game stats were excellent, especially their total number of steals.  Similarly, given the same formula, according to the model, the odds that Hartford would win the game given its game statistics are expected to be `r round(exp(-2.175), 3)`.  Thus, Hartford would be expected to win `r round(exp(3.987), 3)` games for every loss.  The odds `r round(exp(3.987), 3)` means for every 1 win the team is expected to lose roughly 9 games.
+
+### Model Conditions
+
+
 
 
 
