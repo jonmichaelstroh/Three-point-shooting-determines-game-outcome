@@ -21,6 +21,8 @@ library(broom)
 library(knitr)
 library(readxl)
 library(patchwork)
+library(Stat2Data)
+library(yardstick)
 ```
 
 ```{r}
@@ -235,9 +237,81 @@ selected_mm2021_model_AIC_nocenter <- glm(Win ~ twoPercent + threePercent + TOV 
 tidy(selected_mm2021_model_AIC_nocenter) %>% kable(digits = 3)
 ```
 
-For example, in the first round of the NCAA tournament, 1 seed Baylor beat 16 seed Hartford 79 to 55.  According to the model, the odds that Baylor would win the game given its game statistics are expected to be  `r round(exp(3.987), 3)` ($exp^{-3.263 + 0.095(47.6) + 0.090(33.3) - 0.214(10) + 0.277(15) - 0.229(16) + 0.138(10)}$).  This indicates that given its game statistics, Baylor is expected to win `r round(exp(3.987), 3)` games for every one loss.  This value may seem extreme but Baylor's game stats were excellent, especially their total number of steals.  Similarly, given the same formula, according to the model, the odds that Hartford would win the game given its game statistics are expected to be `r round(exp(-2.175), 3)`.  Thus, Hartford would be expected to win `r round(exp(3.987), 3)` games for every loss.  The odds `r round(exp(3.987), 3)` means for every 1 win the team is expected to lose roughly 9 games.
+For example, in the first round of the NCAA tournament, 1 seed Baylor beat 16 seed Hartford 79 to 55.  According to the model, the odds that Baylor would win the game given its game statistics are expected to be  `r round(exp(1.777), 3)` ($exp^{-5.473 + 0.095(47.6) + 0.090(33.3) - 0.214(10) + 0.277(15) - 0.229(16) + 0.138(10)}$).  This indicates that given its game statistics, Baylor is expected to win `r round(exp(1.777), 3)` games for every one loss. Similarly, given the same formula, according to the model, the odds that Hartford would win the game given its game statistics are expected to be `r round(exp(-4.38975), 3)`.  Thus, Hartford would be expected to win `r round(exp(-4.38975), 3)` games for every loss, or in a better interpretation, 1 win the team is expected to lose roughly 83.3 games.  This may seem extreme but Hartford did have a very poor performance (24 turnovers!), and so it is unlikely a team will win many games with 24 turnovers and such poor shooting.
 
 ### Model Conditions
+
+#### Linearity
+
+To check if linearity is satisfied, we plot the predictor variable against the empirical logit and are looking for a linear relationship.
+
+```{r}
+emplogitplot1(Win ~ twoPercent, data = mm2021byteams, ngroups = 10)
+```
+```{r}
+emplogitplot1(Win ~ threePercent, data = mm2021byteams, ngroups = 10)
+```
+```{r}
+emplogitplot1(Win ~ TOV, data = mm2021byteams, ngroups = 10)
+```
+```{r}
+emplogitplot1(Win ~ FTA, data = mm2021byteams, ngroups = 10)
+```
+```{r}
+emplogitplot1(Win ~ PF, data = mm2021byteams, ngroups = 5)
+```
+```{r}
+emplogitplot1(Win ~ STL, data = mm2021byteams, ngroups = 5)
+```
+Based on the empirical logit plots, the linearity condition is met for each predictor variable.
+
+#### Randomness
+
+The randomness condition is murky. Each individual basketball is game is a random event.  However, teams are inherently unequal, and therefore each game is not a 50-50 random event.
+
+#### Indepedence
+
+Again, murky.  The outcome of one game does not directly affect the outcome of another game.  However, it does effect the teams that play, with better teams typically advancing.
+
+### Assessing Model Fit
+
+```{r}
+mm2021byteams_aug <- augment(selected_mm2021_model_AIC_nocenter, type.predict = "response")
+
+mm2021byteams_aug <- mm2021byteams_aug %>% mutate(pred_Win = if_else (.fitted > 0.55, "Predicted Win", "Predicted Loss"))
+
+mm2021byteams_aug %>% count (Win, pred_Win)
+```
+
+According to the confusion matrix for the model with a threshold of 0.55, the misclassification rate is 17.4%, with a sensitivity of 81.8% and a specificity of 83.3%.  The threshold 0.55 was observed as the best to minimize misclassification as well as relatively equal sensativity and specificity.
+
+```{r}
+mm2021byteams_aug <- mm2021byteams_aug %>% mutate(Win = factor(Win, levels = c("1", "0")))
+
+roc_curve_mm2021byteams_aug <- mm2021byteams_aug %>%
+  roc_curve(Win, .fitted) 
+
+autoplot(roc_curve_mm2021byteams_aug)
+```
+```{r}
+mm2021byteams_aug %>%
+roc_auc(Win, .fitted) %>%
+ pull(.estimate)
+```
+
+According to the ROC Curve and the AUC of 0.887, the model is a good fit for the data.  Considering there are only six predictor variables (the model being fairly simple), AUC values closer to 1 and farther from 0.5 indicate better model fit for the data.
+
+#### Benefits and Drawbacks to this Model
+
+Certain benefits to this model include: its applicability to predicting games in the NCAA tournament.  To predict future NCAA tournament games, one can apply the average statistics for a team to predict whether or not they will win the game.  Additionally, its accuracy is based upon the previous NCAA tournament and what current trends/developments can be more applicable than the previous tournament.  Furthermore, the model is very simple.
+
+However, the drawbacks:  first, the 20% error rate.  But, more importantly, the quantitative statistcs other than shooting percentages -- turnovers, steals, fouls, and free throw attempted -- require pace adjusting that the model can not take into account.  Teams that play at a faster pace will have a greater total number of raw statistics-- shots, rebounds, and yes, turnovers, steals, fouls, and free throw attempted.  Thus, it is important if making predictions to enter per 40 minute totals to the model to make predictions.
+
+What this model does not successfully do, which was the purpose of this study, is indicate whether three point shooting has a greater affect than any other factor in determining the outcome of NCAA tournament games.  However, assigning value to different factors in the importance for wins is difficult. This model did indicate that of the four factors, shooting percentages, offensive rebounds, turnovers, and free throws attempted,  offensive rebounds was not statistically significant and left out of the model. 
+
+
+
+
 
 
 
