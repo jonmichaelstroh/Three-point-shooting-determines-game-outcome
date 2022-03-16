@@ -2,10 +2,7 @@
 title: "Does three point shooting determine NCAA Tournament game outcomes more than any other factor?"
 author: "Jon Michael Stroh"
 date: "`r Sys.Date()`"
-output: 
- pdf_document: 
-    fig_height: 3
-    fig_width: 5
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -36,89 +33,113 @@ mm2021byteams <- mm2021byteams %>% mutate(Win = factor(Win))
 ### New Variables
 
 #### More3s
-Frequency of the winning team out shooting the losing team on 3 point shots (variable more3s equals 0 if losing team made more three point shots, 0.5 if an equal amount were made, and 1 if the winning team made more three point shots):
+Frequency of the winning team making more 3 point shots than losing team:
 
 ```{r}
 marchmadness2021 <- marchmadness2021 %>% 
-  mutate(more3s = factor(if_else(W3P > L3P, 1, if_else(W3P == L3P, 0.5, 0))))
+  mutate(more3s = factor(if_else(W3P > L3P, 'Winner', if_else(W3P == L3P, 'Tie', 'Loser'))))
 
-marchmadness2021 %>% count(more3s)
+
+marchmadness2021 %>% group_by(more3s) %>%
+  summarise(cnt = n()) %>%
+  mutate(percent = round(cnt / sum(cnt) * 100, 3)) %>% 
+  arrange(desc(percent))
 ```
 
-In the 2021 tournament, the winning team made more three pointers in 63.6% (42/66) of games, the teams tied in 13.6% (9/66) of games, and the losing team made more three pointers in 22.7% (15/66) of games.
+In the 2021 tournament, the winning team made more three pointers in 63.6% (42/66) of games, the teams tied in 13.6%, and the losing team made more three pointers in 22.7%.
 
 #### Better3s
 
-Frequency of the winning team out shooting the losing team on 3 point shot percentage (variable better3s equals 0 if the losing team made a higher percentage of three point shots, 0.5 if an equal percentage were made, and 1 if the winning team made a higher percentage):
+Frequency of the winning team out shooting the losing team on 3 point shooting percentage:
 
 ```{r}
 marchmadness2021 <- marchmadness2021 %>% 
   mutate(better3s = factor(if_else( (W3P/W3PA) > (L3P/L3PA), 
-  1, if_else((W3P/W3PA) == (L3P/L3PA), 0.5, 0))))
+  'Winner', if_else((W3P/W3PA) == (L3P/L3PA), 'Tie', 'Loser'))))
 
-marchmadness2021 %>% count(better3s)
+marchmadness2021  %>% group_by(better3s) %>%
+  summarise(cnt = n()) %>%
+  mutate(percent = round(cnt / sum(cnt) * 100, 3)) %>% 
+  arrange(desc(percent))
 ```
 
-In the 2021 tournament, the winning team made a higher percentage of three pointers in 77.3% (51/66) of games, while the losing team made a higher percentage in only 22.7% (15/66) of games.
+In the 2021 tournament, the winning team made a higher percentage of three pointers in 77.3% (51/66) of games.  Wow, that's fairly significant.  Let's check both together.
 
 #### More & Better 3s
 
 ```{r}
-marchmadness2021 %>% count(more3s, better3s, sort = TRUE)
+marchmadness2021 %>% group_by(better3s, more3s) %>%
+  summarise(count = n()) %>%
+  mutate(percent = round(count / 66 * 100, 3)) %>% 
+  arrange(desc(percent))
 ```
 
-In 2021, in only 13.6% (9/66) of games did the winning team make less 3s and a lower percentage of them.  In contrast, in 68.2% (45/66) of games did the winning team either make more 3s and shoot a higher percentage (38 games) or tie on the number of makes and shoot a higher percentage (7 games).
+In 2021, in only 13.6% of games did the losing team make more 3s and a higher percentage of them.  In contrast, in 68.2% (45/66) of games did the winning team either make more 3s and shoot a higher percentage or tie on the number of makes and shoot a higher percentage.
+
+Alright, so in fairly conclusive fashion, we have determined that teams that shoot better on threes win games at a much higher percentage in this NCAA tournament.  Now, we must contrast it with winning percentage of teams that shoot better on 2s, or get and make more free throws, or grab more rebounds, etc.
 
 #### More 2s
-Frequency of winning team out shooting losing team on 2 point shots (variable more2s equals 0 if losing team made more two point shots, 0.5 if equal amount were made, and 1 if the winning team made more two point shots):
+First, we will look at the frequency of winning teams making more 2 point shots.
 
 ```{r}
 marchmadness2021 <- marchmadness2021 %>% 
-  mutate(more2s = factor(if_else(W2P > L2P , 1, if_else(W2P == L2P, 0.5, 0))))
+  mutate(more2s = factor(if_else(W2P > L2P , 'Winner', if_else(W2P == L2P, 'Tie', 'Loser'))))
 
-marchmadness2021 %>% count(more2s)
+marchmadness2021 %>% group_by(more2s) %>%
+  summarise(cnt = n()) %>%
+  mutate(percent = round(cnt / sum(cnt) * 100, 3)) %>% 
+  arrange(desc(percent))
 ```
 
-In only 42 games did the winning team make more 2 point baskets, and in 20 games the losing team made more (4 ties).
+The winning teams made more 2 point shots at exactly the same frequency as three point shots (~64%).  Interesting to note that losing teams made more 2 point shots in 30% of game compared to 23% for threes.
+
+It is important to remember, both of these frequencies (more2s and more3s) are measuring make totals which is heavily influenced by the total number of attempts.  Total number of attempts is further influenced by other factors such as offensive rebounds and turnovers, etc.  We can investigate these later.
 
 #### Better 2s
-Frequency of winning team out shooting losing team on 2 point shot percentage (variable better2s equals 0 if losing team made a higher percentage of two point shots, 0.5 if equal amount were made, and 1 if the winning team a higher percentage of two point shots):
+Frequency of winning team out shooting losing team on 2 point shot percentage:
 
 ```{r}
 marchmadness2021 <- marchmadness2021 %>% 
-  mutate(better2s = factor(if_else((W2P/W2PA) > (L2P/L2PA), 1, if_else((W2P/W2PA) == (L2P/L2PA), 0.5, 0))))
+  mutate(better2s = factor(if_else((W2P/W2PA) > (L2P/L2PA), 'Winner', if_else((W2P/W2PA) == (L2P/L2PA), 'Tie', 'Loser'))))
 
-marchmadness2021 %>% count(better2s)
+marchmadness2021 %>% group_by(better2s) %>%
+  summarise(cnt = n()) %>%
+  mutate(percent = round(cnt / sum(cnt) * 100, 3)) %>% 
+  arrange(desc(percent))
 ```
 
-WOW-- in only 44 games did the winning team out shoot the losing team on 2 point percentage, and in 21 games, the losing team out shot the winning team on 2 point percentage.
+WOW...in only 67% of NCAA tourney games did the winning team shoot a higher percentage on 2s.  This was 77% for three point percentage.
 
 #### moreFgs
-Frequency of the winning team out shooting the losing team in general (more shots made) (variable morefgs equals 0 if losing team made more shots, 0.5 if equal amount were made, and 1 if the winning team made more shots):
+Just a quick glimpse at percent of games winning teams made more field goals in general:
 
 ```{r}
 marchmadness2021 <- marchmadness2021 %>% 
-  mutate(morefgs = factor(if_else(WFG > LFG , 1, if_else(WFG == LFG, 0.5, 0))))
+  mutate(morefgs = factor(if_else(WFG > LFG , 'Winner', if_else(WFG == LFG, 'Tie', 'Loser'))))
 
-marchmadness2021 %>% count(morefgs)
+marchmadness2021 %>% group_by(morefgs) %>%
+  summarise(cnt = n()) %>%
+  mutate(percent = round(cnt / sum(cnt) * 100, 3)) %>% 
+  arrange(desc(percent))
 ```
 
-In 84.8% of games the winning team made more field goals (makes sense, only other option to win then is by making more 3s as a portion of those field goals or more free throws or both).  There were 3 ties.
+Well haha, this should make sense.  Scoring points is in fact how one wins the game.  Actually, ~85% seems almost lowish.  The only other option to win is by making more 3s as a portion of those field goals or more free throws or both. There were 3 ties.
 
 #### betterfgs
-The frequency of the winning team out shooting the losing team by percentage (higher percentage of total shots made) (variable betterfgs equals 0 if losing team made more shots, 0.5 if equal amount were made, and 1 if the winning team made more shots):
+We'll finely look at overall shooting percent as it relates to winners and losers: 
 
 ```{r}
 marchmadness2021 <- marchmadness2021 %>% 
   mutate(betterfgs = factor(if_else((WFG/WFGA) > (LFG/LFGA), 
-  1, if_else((WFG/WFGA) == (LFG/LFGA), 0.5, 0))))
+  'Winner', if_else((WFG/WFGA) == (LFG/LFGA), 'Tie', 'Loser'))))
 
-marchmadness2021 %>% count(betterfgs)
+marchmadness2021 %>% group_by(betterfgs) %>%
+  summarise(cnt = n()) %>%
+  mutate(percent = round(cnt / sum(cnt) * 100, 3)) %>% 
+  arrange(desc(percent))
 ```
 
-However, interesting enough, in only 71.2% of games (47/66) did the winning team shoot a higher percentage on all field goals. With this being the case, clearly other factors can influence a win, the likely ones for investigation is free throw shooting (although there tends to be a small difference in this between teams in a single game), three point shooting (our variable of primary interests), and factors that can get a team more shots (offensive rebounding and forcing turnovers while limiting those things for themselves).
-
-
+However, interesting enough, in only 71.2% of games (47/66) did the winning team shoot a higher percentage on all field goals. This just reaffirms that clearly other factors can influence a win, the likely ones for investigation is free throw shooting (although there tends to be a small difference in this between teams in a single game), three point shooting (our variable of primary interests), and factors that can get a team more shots (offensive rebounding and forcing turnovers while limiting those thingsagainst and for themselves).
 
 ### Distribution of Shooting
 
@@ -129,7 +150,7 @@ twoPercent is the two point shooting percentage by team as a percentage, rather 
 mm2021byteams <- mm2021byteams %>% mutate(twoPercent = `2P%` * 100)
 
 ggplot(data = mm2021byteams, aes(x = twoPercent)) + 
-  geom_histogram(bins = 20) + 
+  geom_histogram(bins = 30) + 
   labs(x = "Shooting Percentage", 
        title = "Two Point Shooting Percentages in MM 2021")
 ```
@@ -141,7 +162,7 @@ threePercent is the three point shooting percentage by team as a percentage, rat
 mm2021byteams <- mm2021byteams %>% mutate(threePercent = `3P%` * 100)
 
 ggplot(data = mm2021byteams, aes(x = threePercent)) + 
-  geom_histogram(bins = 20) + 
+  geom_histogram(bins = 30) + 
   labs(x = "Shooting Percentage", 
        title = "Three Point Shooting Percentages in MM 2021")
 ```
@@ -158,13 +179,13 @@ mm2021byteams %>%
             threePercent_SD = sd(threePercent))
 ```
 
-Although three point shooting appears to much more closely resemble the normal distribution, it has a larger standard deviation indicating that there is more variation in three point shooting than two point shooting (although the standard deviations are very close) by game.  According to the standard deviations, 68% of the team's three point shooting by game occurs within 10.97% of 33.45%, while 68% of the team's two point shooting by game occurs within 10.14% of 48.97%.  There is slightly more variation is three point shooting performances by game than two point shooting performances.
+I hypothesized that there much exist a larger standard deviation in three point shooting by game throughout the tourney.  That is, three point shooting performance varies more game by game.  In this tournament, this did not occur.  The standard deviations are nearly identical (less than a percentage point greater for three point shooting).
 
 #### Three Point Percentage by Outcome
 
 ```{r}
-ggplot(data = mm2021byteams, aes(y = `3P%`, color = Win)) + 
-  geom_boxplot() + 
+ggplot(data = mm2021byteams, aes(y = `3P%`, x = Win, fill = Win)) + 
+  geom_boxplot() + theme(legend.position="none") + 
   labs(y = "Shooting Percentage", 
        title = "Three Point Shooting Percentages by Outcome in MM 2021")
 ```
@@ -308,13 +329,3 @@ Certain benefits to this model include: its applicability to predicting games in
 However, the drawbacks:  first, the 20% error rate.  But, more importantly, the quantitative statistcs other than shooting percentages -- turnovers, steals, fouls, and free throw attempted -- require pace adjusting that the model can not take into account.  Teams that play at a faster pace will have a greater total number of raw statistics-- shots, rebounds, and yes, turnovers, steals, fouls, and free throw attempted.  Thus, it is important if making predictions to take into account team pace.
 
 What this model does not successfully do, which was the purpose of this study, is indicate whether three point shooting has a greater affect than any other factor in determining the outcome of NCAA tournament games.  However, assigning value to different factors in the importance for wins is difficult. This model did indicate that of the four factors, shooting percentages, offensive rebounds, turnovers, and free throws attempted,  offensive rebounds was not statistically significant and left out of the model. 
-
-
-
-
-
-
-
-
-
-
